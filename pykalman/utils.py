@@ -63,11 +63,11 @@ def log_multivariate_normal_density(X, means, covars, min_covar=1.e-7):
     log_prob = np.empty((n_samples, nmix))
     for c, (mu, cv) in enumerate(zip(means, covars)):
         try:
-            cv_chol = linalg.cholesky(cv, lower=True)
+            cv_chol = linalg.cholesky(cv.data, lower=True)
         except linalg.LinAlgError:
             # The model is most probabily stuck in a component with too
             # few observations, we need to reinitialize this components
-            cv_chol = linalg.cholesky(cv + min_covar * np.eye(n_dim),
+            cv_chol = linalg.cholesky((cv + min_covar * np.eye(n_dim)).data,
                                       lower=True)
         cv_log_det = 2 * np.sum(np.log(np.diagonal(cv_chol)))
         cv_sol = solve_triangular(cv_chol, (X - mu).T, lower=True).T
