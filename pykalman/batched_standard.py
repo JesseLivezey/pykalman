@@ -399,7 +399,7 @@ class BatchedKalmanFilter(KalmanFilter):
 
         Parameters
         ----------
-        X : [n_timesteps, n_batch, n_dim_obs] array-like
+        X : [n_batch, n_timesteps, n_dim_obs] array-like
             observations corresponding to times [0...n_timesteps-1].  If `X` is
             a masked array and any of `X[t]`'s components is masked, then
             `X[t]` will be treated as a missing observation.
@@ -410,7 +410,7 @@ class BatchedKalmanFilter(KalmanFilter):
             left untouched.
         """
         assert X.ndim == 3
-        Z = self._parse_observations(X)
+        n_batch = X.shape[0]
 
         # initialize parameters
         (self.transition_matrices, self.transition_offsets,
@@ -452,39 +452,59 @@ class BatchedKalmanFilter(KalmanFilter):
                 warnings.warn(warn_str)
 
         # Actual EM iterations
-        for i in range(n_iter):
-            (predicted_state_means, predicted_state_covariances,
-             kalman_gains, filtered_state_means,
-             filtered_state_covariances) = (
-                _filter(
-                    self.transition_matrices, self.observation_matrices,
-                    self.transition_covariance, self.observation_covariance,
-                    self.transition_offsets, self.observation_offsets,
-                    self.initial_state_mean, self.initial_state_covariance,
-                    Z
+        for ii in range(n_iter):
+            tm = np.zeros_like(self.transition_matrices)
+            om = np.zeros_like(self.observation_matrices)
+            to = np.zeros_like(self.transition_offsets)
+            oo = np.zeros_like(self.observation_offsets)
+            tc = np.zeros_like(self.transition_covariance)
+            oc = np.zeros_like(self.observation_covariance)
+            ism = np.zeros_like(self.initial_state_mean)
+            isc = np.zeros_like(self.initial_state_covariance)
+            for jj in range(n_batch):
+                Z = self._parse_observations(X[jj])
+                (predicted_state_means, predicted_state_covariances,
+                 kalman_gains, filtered_state_means,
+                 filtered_state_covariances) = (
+                    _filter(
+                        self.transition_matrices, self.observation_matrices,
+                        self.transition_covariance, self.observation_covariance,
+                        self.transition_offsets, self.observation_offsets,
+                        self.initial_state_mean, self.initial_state_covariance,
+                        Z
+                    )
                 )
-            )
-            (smoothed_state_means, smoothed_state_covariances,
-             kalman_smoothing_gains) = (
-                _smooth(
-                    self.transition_matrices, filtered_state_means,
-                    filtered_state_covariances, predicted_state_means,
-                    predicted_state_covariances
+                (smoothed_state_means, smoothed_state_covariances,
+                 kalman_smoothing_gains) = (
+                    _smooth(
+                        self.transition_matrices, filtered_state_means,
+                        filtered_state_covariances, predicted_state_means,
+                        predicted_state_covariances
+                    )
                 )
-            )
-            sigma_pair_smooth = _smooth_pair(
-                smoothed_state_covariances,
-                kalman_smoothing_gains
-            )
+                sigma_pair_smooth = _smooth_pair(
+                    smoothed_state_covariances,
+                    kalman_smoothing_gains
+                )
+                (tmj, omj, toj, ooj, tcj, ocj, ismj, iscj) = (
+                    _em(Z, self.transition_offsets, self.observation_offsets,
+                        smoothed_state_means, smoothed_state_covariances,
+                        sigma_pair_smooth, given=given
+                    )
+                )
+                for cm, it in zip((tm, om, to, oo, tc, oc, ism, isc),
+                                   (tmj, omj, toj, ooj, tcj, ocj, ismj, iscj)):
+                    cm[:] = cm + it
+            for cm in (tm, om, to, oo, tc, oc, ism, isc):
+                cm[:] = cm/n_batch
+
             (self.transition_matrices,  self.observation_matrices,
              self.transition_offsets, self.observation_offsets,
              self.transition_covariance, self.observation_covariance,
              self.initial_state_mean, self.initial_state_covariance) = (
-                _em(Z, self.transition_offsets, self.observation_offsets,
-                    smoothed_state_means, smoothed_state_covariances,
-                    sigma_pair_smooth, given=given
-                )
-            )
+                     tm, om, to, oo, tc, oc, ism, isc)
+
+
         return self
 
     def batch_loglikelihood(self, X):
