@@ -11,7 +11,8 @@ import warnings
 import numpy as np
 from scipy import linalg
 
-from .standard import KalmanFilter
+from .standard import (KalmanFilter, _determine_dimensionality, _filter,
+                       _smooth, _smooth_pair, _em)
 from .utils import array1d, array2d, check_random_state, \
     get_params, log_multivariate_normal_density, preprocess_arguments
 
@@ -159,7 +160,7 @@ class BatchedKalmanFilter(KalmanFilter):
         self.n_dim_state = n_dim_state
         self.n_dim_obs = n_dim_obs
 
-    def batch_sample(self, n_timesteps, initial_state=None, random_state=None):
+    def batched_sample(self, n_timesteps, initial_state=None, random_state=None):
         """Sample a state sequence :math:`n_{\\text{timesteps}}` timesteps in
         length.
 
@@ -195,7 +196,7 @@ class BatchedKalmanFilter(KalmanFilter):
 
         return (states, np.ma.array(observations))
 
-    def batch_filter(self, X):
+    def batched_filter(self, X):
         """Apply the Kalman Filter
 
         Apply the Kalman Filter to estimate the hidden state at time :math:`t`
@@ -231,7 +232,7 @@ class BatchedKalmanFilter(KalmanFilter):
         n_batch, n_timesteps, n_dim_obs = X.shape
         n_dim_state = initial_state_mean.shape[0]
         filtered_state_means = np.ma.empty((n_batch, n_timesteps, n_dim_state))
-        filtered_state_covariances = np.ma.empty((n_batch, n_time_steps,
+        filtered_state_covariances = np.ma.empty((n_batch, n_timesteps,
                                                   n_dim_state, n_dim_state))
         for ii in range(n_batch):
             mns, cvs = self.filter(X[ii])
@@ -240,7 +241,7 @@ class BatchedKalmanFilter(KalmanFilter):
 
         return (filtered_state_means, filtered_state_covariances)
 
-    def batch_filter_update(self, filtered_state_mean, filtered_state_covariance,
+    def batched_filter_update(self, filtered_state_mean, filtered_state_covariance,
                       observation=None, transition_matrix=None,
                       transition_offset=None, transition_covariance=None,
                       observation_matrix=None, observation_offset=None,
@@ -343,14 +344,14 @@ class BatchedKalmanFilter(KalmanFilter):
                                        observation, transition_matrix,
                                        transition_offset, transition_covariance,
                                        observation_matrix, observation_offset,
-                                       observation_covariance):
+                                       observation_covariance)
             next_filtered_state_mean[ii] = nfsm
             next_filtered_state_covariance[ii] = nfsc
 
 
         return (next_filtered_state_mean, next_filtered_state_covariance)
 
-    def batch_smooth(self, X):
+    def batched_smooth(self, X):
         """Apply the Kalman Smoother
 
         Apply the Kalman Smoother to estimate the hidden state at time
@@ -381,7 +382,7 @@ class BatchedKalmanFilter(KalmanFilter):
         n_batch, n_timesteps, n_dim_obs = X.shape
         n_dim_state = initial_state_mean.shape[0]
         smoothed_state_means = np.ma.empty((n_batch, n_timesteps, n_dim_state))
-        smoothed_state_covariances = np.ma.empty((n_batch, n_time_steps,
+        smoothed_state_covariances = np.ma.empty((n_batch, n_timesteps,
                                                   n_dim_state, n_dim_state))
         for ii in range(n_batch):
             mns, cvs = self.smooth(X[ii])
@@ -390,7 +391,7 @@ class BatchedKalmanFilter(KalmanFilter):
 
         return (smoothed_state_means, smoothed_state_covariances)
 
-    def batch_em(self, X, y=None, n_iter=10, em_vars=None):
+    def batched_em(self, X, y=None, n_iter=10, em_vars=None):
         """Apply the EM algorithm
 
         Apply the EM algorithm to estimate all parameters specified by
@@ -507,7 +508,7 @@ class BatchedKalmanFilter(KalmanFilter):
 
         return self
 
-    def batch_loglikelihood(self, X):
+    def batched_loglikelihood(self, X):
         """Calculate the log likelihood of all observations
 
         Parameters
@@ -540,4 +541,4 @@ class BatchedKalmanFilter(KalmanFilter):
         likelihood : float
             likelihood of all observations
         """
-        return self.batch_loglikelihood(X).mean()
+        return self.batched_loglikelihood(X).mean()

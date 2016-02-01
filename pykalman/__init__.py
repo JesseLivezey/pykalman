@@ -8,6 +8,7 @@ spaces.
 '''
 
 from .standard import KalmanFilter
+from .batched_standard import BatchedKalmanFilter
 from .unscented import AdditiveUnscentedKalmanFilter, UnscentedKalmanFilter
 
 __all__ = [
