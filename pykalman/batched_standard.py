@@ -121,14 +121,14 @@ class BatchedKalmanFilter(KalmanFilter):
         `observation_offsets`, or `observation_covariance`.
     """
 
-    def batched_sample(self, n_timesteps, initial_state=None, random_state=None):
+    def batched_sample(self, n_batch, n_timesteps, initial_state=None, random_state=None):
         """Sample a state sequence :math:`n_{\\text{timesteps}}` timesteps in
         length.
 
         Parameters
         ----------
         n_batch : int
-            number of timesteps
+            number of batch elements
         n_timesteps : int
             number of timesteps
 
