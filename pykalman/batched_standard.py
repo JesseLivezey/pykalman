@@ -120,45 +120,6 @@ class BatchedKalmanFilter(KalmanFilter):
         do not specify initial values for `observation_matrices`,
         `observation_offsets`, or `observation_covariance`.
     """
-    def __init__(self, transition_matrices=None, observation_matrices=None,
-            transition_covariance=None, observation_covariance=None,
-            transition_offsets=None, observation_offsets=None,
-            initial_state_mean=None, initial_state_covariance=None,
-            random_state=None,
-            em_vars=['transition_covariance', 'observation_covariance',
-                     'initial_state_mean', 'initial_state_covariance'],
-            n_dim_state=None, n_dim_obs=None):
-        """Initialize Kalman Filter"""
-
-        # determine size of state space
-        n_dim_state = _determine_dimensionality(
-            [(transition_matrices, array2d, -2),
-             (transition_offsets, array1d, -1),
-             (transition_covariance, array2d, -2),
-             (initial_state_mean, array1d, -1),
-             (initial_state_covariance, array2d, -2),
-             (observation_matrices, array2d, -1)],
-            n_dim_state
-        )
-        n_dim_obs = _determine_dimensionality(
-            [(observation_matrices, array2d, -2),
-             (observation_offsets, array1d, -1),
-             (observation_covariance, array2d, -2)],
-            n_dim_obs
-        )
-
-        self.transition_matrices = transition_matrices
-        self.observation_matrices = observation_matrices
-        self.transition_covariance = transition_covariance
-        self.observation_covariance = observation_covariance
-        self.transition_offsets = transition_offsets
-        self.observation_offsets = observation_offsets
-        self.initial_state_mean = initial_state_mean
-        self.initial_state_covariance = initial_state_covariance
-        self.random_state = random_state
-        self.em_vars = em_vars
-        self.n_dim_state = n_dim_state
-        self.n_dim_obs = n_dim_obs
 
     def batched_sample(self, n_timesteps, initial_state=None, random_state=None):
         """Sample a state sequence :math:`n_{\\text{timesteps}}` timesteps in
