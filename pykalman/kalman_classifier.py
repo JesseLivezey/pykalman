@@ -44,7 +44,7 @@ class KalmanFilterClassifier(ClassifierMixin):
         return np.exp(self.predict_log_proba(X))
 
     def predict(self, X):
-        return np.argmax(self.predict_log_proba(X), axis=1))
+        return np.argmax(self.predict_log_proba(X), axis=1)
 
     def score(self, X, y):
         return (self.predict(X) == y).mean()
