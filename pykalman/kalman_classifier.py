@@ -37,8 +37,8 @@ class KalmanFilterClassifier(ClassifierMixin):
     def predict_log_proba(self, X):
         lps = []
         for cl in self.classifiers:
-            lps.append(cl.batched_loglikelihood(X))
-        return np.concatenate(lps, axis=1)
+            lps.append(cl.batched_loglikelihood(X)[:, np.newaxis])
+        return np.hstack(lps)
 
     def predict_proba(self, X):
         return np.exp(self.predict_log_proba(X))
@@ -47,4 +47,4 @@ class KalmanFilterClassifier(ClassifierMixin):
         return np.argmax(self.predict_log_proba(X), axis=1)
 
     def score(self, X, y):
-        return (self.predict(X) == y).mean()
+        return (self.predict(X) == y).astype(int).mean()
